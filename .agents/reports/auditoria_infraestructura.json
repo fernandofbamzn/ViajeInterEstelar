@@ -1,0 +1,10 @@
+{
+  "findings": [],
+  "missing_in_manifest": [],
+  "wrappers_without_target": [],
+  "totals": {
+    "findings": 0,
+    "missing_in_manifest": 0,
+    "wrappers_without_target": 0
+  }
+}

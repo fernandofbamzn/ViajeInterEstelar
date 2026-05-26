@@ -1,0 +1,170 @@
+editorial:
+  name: "EditorIAl IOREB"
+  version: "0.1.0"
+  language: "es-ES"
+
+active_project:
+  id: "bitacora_centauri"
+  title: "Bitácora Centauri"
+  genre: "hard_scifi_contemplativa"
+
+precedence:
+  - user_request
+  - safety
+  - novel
+  - genre
+  - editorial
+
+models:
+  recommended_roles:
+    writer: "Claude Opus"
+    editor: "GPT-5.5 or GPT-4o"
+    critic: "GPT-5.5 or Claude Opus"
+    orchestrator: "Gemini 3.5 Flash"
+    producer: "Local Script / Cheap Model"
+
+paths:
+  manuscript: "manuscrito/"
+  bible: "biblia/"
+  plot: "trama/"
+  characters: "biblia/personajes/"
+  world: "biblia/mundo/"
+  technology: "biblia/tecnologia/"
+  export: "exportacion/"
+  translations: "traducciones/"
+  costs: "costes/"
+  agents: ".agents/"
+
+novel_structure:
+  required_paths:
+    - "manuscrito/"
+    - "trama/"
+    - "trama/premisas/"
+    - "trama/escaletas/"
+    - "biblia/"
+    - "biblia/personajes/"
+    - "biblia/mundo/"
+    - "biblia/tecnologia/"
+    - "exportacion/"
+    - "exportacion/es/"
+  required_indexes:
+    - "trama/README.md"
+    - "biblia/personajes/README.md"
+    - "biblia/mundo/README.md"
+    - "biblia/tecnologia/README.md"
+
+translation:
+  enabled: true
+  default_source_language: "es"
+  supported_target_languages:
+    - "en"
+    - "fr"
+    - "de"
+    - "it"
+    - "pt"
+  default_status: "native_review_pending"
+  paths:
+    translations: "traducciones/"
+    localized_exports: "exportacion/"
+  workflows:
+    translation: ".agents/editorial/workflows/wf_editorial_09_traduccion_multilingue.md"
+    localization_publication: ".agents/editorial/workflows/wf_editorial_10_localizacion_publicacion.md"
+    translation_audit: ".agents/editorial/workflows/wf_editorial_11_auditoria_traduccion.md"
+
+active_components:
+  roles:
+    editorial:
+      - ".agents/editorial/roles/rol_editorial_ceo.md"
+      - ".agents/editorial/roles/rol_editorial_escritor.md"
+      - ".agents/editorial/roles/rol_editorial_lorekeeper.md"
+      - ".agents/editorial/roles/rol_editorial_editor.md"
+      - ".agents/editorial/roles/rol_editorial_productor.md"
+      - ".agents/editorial/roles/rol_editorial_lector_cero.md"
+      - ".agents/editorial/roles/rol_editorial_traductor.md"
+      - ".agents/editorial/roles/rol_editorial_compliance.md"
+      - ".agents/editorial/roles/rol_editorial_corrector.md"
+      - ".agents/editorial/roles/rol_editorial_creativo.md"
+
+  rules:
+    editorial:
+      - ".agents/editorial/rules/regla_editorial_01_calidad_minima.md"
+      - ".agents/editorial/rules/regla_editorial_02_etica_ia_y_transparencia.md"
+      - ".agents/editorial/rules/regla_editorial_03_control_costes.md"
+      - ".agents/editorial/rules/regla_editorial_04_no_publicar_sin_revision_humana.md"
+      - ".agents/editorial/rules/regla_editorial_05_separacion_roles.md"
+      - ".agents/editorial/rules/regla_editorial_06_seguridad_operativa.md"
+      - ".agents/editorial/rules/regla_editorial_07_no_imitacion_copyright.md"
+      - ".agents/editorial/rules/regla_editorial_09_compliance_plataformas.md"
+      - ".agents/editorial/rules/regla_editorial_10_permisos_operativos.md"
+      - ".agents/editorial/rules/regla_editorial_11_estructura_proyecto_novela.md"
+    genre:
+      - ".agents/generos/hard_scifi_contemplativa/rules/regla_genero_01_ciencia_dura.md"
+      - ".agents/generos/hard_scifi_contemplativa/rules/regla_genero_02_maravilla_cosmica.md"
+      - ".agents/generos/hard_scifi_contemplativa/rules/regla_genero_03_control_infodumping.md"
+      - ".agents/generos/hard_scifi_contemplativa/rules/regla_genero_04_verosimilitud_tecnologica.md"
+      - ".agents/generos/hard_scifi_contemplativa/rules/regla_genero_05_tono_contemplativo.md"
+    novel:
+      - ".agents/novelas/bitacora_centauri/rules/regla_bitacora_01_formato_diario.md"
+      - ".agents/novelas/bitacora_centauri/rules/regla_bitacora_02_tono_bitacora.md"
+
+  skills:
+    editorial:
+      - ".agents/editorial/skills/skill_analisis_narrativo/SKILL.md"
+      - ".agents/editorial/skills/skill_formatear_latex/SKILL.md"
+      - ".agents/editorial/skills/skill_calcular_coste_tokens/SKILL.md"
+      - ".agents/editorial/skills/skill_detectar_olor_ia/SKILL.md"
+      - ".agents/editorial/skills/skill_generar_blurb_comercial/SKILL.md"
+      - ".agents/editorial/skills/skill_validar_publicacion_kdp_google/SKILL.md"
+      - ".agents/editorial/skills/skill_auditar_producto_editorial/SKILL.md"
+      - ".agents/editorial/skills/skill_generar_metadatos/SKILL.md"
+      - ".agents/editorial/skills/skill_plan_marketing_lanzamiento/SKILL.md"
+      - ".agents/editorial/skills/skill_traducir_manuscrito/SKILL.md"
+      - ".agents/editorial/skills/skill_crear_glosario_traduccion/SKILL.md"
+      - ".agents/editorial/skills/skill_auditar_traduccion/SKILL.md"
+      - ".agents/editorial/skills/skill_localizar_metadatos/SKILL.md"
+      - ".agents/editorial/skills/skill_validar_edicion_internacional/SKILL.md"
+      - ".agents/editorial/skills/skill_preparar_portada_localizada/SKILL.md"
+      - ".agents/editorial/skills/skill_auditar_riesgo_legal/SKILL.md"
+      - ".agents/editorial/skills/skill_corregir_ortotipografia/SKILL.md"
+      - ".agents/editorial/skills/skill_validar_epub_pdf/SKILL.md"
+      - ".agents/editorial/skills/skill_brainstorming_premisas/SKILL.md"
+      - ".agents/editorial/skills/skill_diseno_worldbuilding/SKILL.md"
+      - ".agents/editorial/skills/skill_desarrollo_personajes_base/SKILL.md"
+      - ".agents/editorial/skills/skill_desarrollo_lore_profundo/SKILL.md"
+    genre:
+      - ".agents/generos/hard_scifi_contemplativa/skills/skill_extrapolar_ciencia_dura/SKILL.md"
+      - ".agents/generos/hard_scifi_contemplativa/skills/skill_controlar_tono_contemplativo/SKILL.md"
+      - ".agents/generos/hard_scifi_contemplativa/skills/skill_controlar_infodumping/SKILL.md"
+      - ".agents/generos/hard_scifi_contemplativa/skills/skill_auditar_verosimilitud_cientifica/SKILL.md"
+    novel:
+      - ".agents/novelas/bitacora_centauri/skills/skill_mantener_estilo_diario/SKILL.md"
+      - ".agents/novelas/bitacora_centauri/skills/skill_gestionar_imagenes_bitacora/SKILL.md"
+
+  workflows:
+    editorial:
+      - ".agents/editorial/workflows/wf_editorial_00_ejecucion_semiautonoma.md"
+      - ".agents/editorial/workflows/wf_editorial_01_director_editorial.md"
+      - ".agents/editorial/workflows/wf_editorial_02_control_costes.md"
+      - ".agents/editorial/workflows/wf_editorial_03_auditor_calidad_ia.md"
+      - ".agents/editorial/workflows/wf_editorial_04_publicacion.md"
+      - ".agents/editorial/workflows/wf_editorial_05_marketing_lanzamiento.md"
+      - ".agents/editorial/workflows/wf_editorial_06_postmortem_comercial.md"
+      - ".agents/editorial/workflows/wf_editorial_07_refactorizacion_infraestructura.md"
+      - ".agents/editorial/workflows/wf_editorial_08_productor_entregables.md"
+      - ".agents/editorial/workflows/wf_editorial_09_traduccion_multilingue.md"
+      - ".agents/editorial/workflows/wf_editorial_10_localizacion_publicacion.md"
+      - ".agents/editorial/workflows/wf_editorial_11_auditoria_traduccion.md"
+      - ".agents/editorial/workflows/wf_editorial_12_compliance_legal.md"
+      - ".agents/editorial/workflows/wf_editorial_13_correccion_ortotipografica.md"
+      - ".agents/editorial/workflows/wf_editorial_14_qa_epub_pdf.md"
+      - ".agents/editorial/workflows/wf_editorial_15_brainstorming_historia.md"
+      - ".agents/editorial/workflows/wf_editorial_16_desarrollo_universo_lore.md"
+      - ".agents/editorial/workflows/wf_editorial_17_concepcion_personajes_fichas.md"
+    genre:
+      - ".agents/generos/hard_scifi_contemplativa/workflows/wf_genero_01_auditoria_cientifica.md"
+      - ".agents/generos/hard_scifi_contemplativa/workflows/wf_genero_02_diseno_concepto_especulativo.md"
+      - ".agents/generos/hard_scifi_contemplativa/workflows/wf_genero_03_revision_infodumping.md"
+    novel:
+      - ".agents/novelas/bitacora_centauri/workflows/wf_bitacora_01_escritor_diario.md"
+      - ".agents/novelas/bitacora_centauri/workflows/wf_bitacora_02_curador_imagenes.md"
+      - ".agents/novelas/bitacora_centauri/workflows/wf_bitacora_03_editor_continuista.md"

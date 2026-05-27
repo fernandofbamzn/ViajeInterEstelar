@@ -3,7 +3,9 @@ import html
 import re
 import uuid
 import zipfile
+import sys
 from pathlib import Path
+from optimizar_imagenes_a5 import optimizar_imagen
 
 
 def repo_root_from_script() -> Path:
@@ -71,23 +73,14 @@ def validate_metadata(metadata: dict, language: str):
                 if pl.lower() in val.lower():
                     raise ValueError(f"Se detecto el placeholder prohibido '{pl}' en el campo '{field}'")
     
-    if language == "es":
-        if title != "Luz Vieja":
-            raise ValueError(f"El titulo en espanol debe ser 'Luz Vieja', se obtuvo '{title}'")
-        if subtitle != "Veinte anos de distancia" and subtitle != "Veinte años de distancia":
-            raise ValueError(f"El subtitulo en espanol debe ser 'Veinte anos de distancia', se obtuvo '{subtitle}'")
-    elif language == "en":
-        if title != "Old Light":
-            raise ValueError(f"El titulo en ingles debe ser 'Old Light', se obtuvo '{title}'")
-        if subtitle != "Twenty Light-Years of Distance":
-            raise ValueError(f"El subtitulo en ingles debe ser 'Twenty Light-Years of Distance', se obtuvo '{subtitle}'")
-            
     if author != "IOREB":
         raise ValueError(f"El autor definitivo debe ser 'IOREB', se obtuvo '{author}'")
 
 
-def parse_markdown_to_html(text: str) -> str:
+def parse_markdown_to_html(text: str, project_root: Path, cap_idx: int, export_dir: Path) -> tuple[str, list[dict]]:
     html_lines = []
+    images = []
+    image_idx = 1
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
@@ -95,11 +88,33 @@ def parse_markdown_to_html(text: str) -> str:
             continue
 
         l_line = line.lower()
-        if l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter "):
+        if (l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or 
+            l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter ") or
+            l_line.startswith("# acto") or l_line.startswith("# prólogo") or l_line.startswith("# prologo") or
+            l_line.startswith("# epílogo") or l_line.startswith("# epilogo")):
+            
             clean = line.replace("# ", "", 1) if line.startswith("# ") else line
-            parts = re.split(r"\s+[—-]\s+", clean, maxsplit=1)
-            title = parts[1].strip() if len(parts) > 1 else clean.strip()
+            title = clean.strip()
             html_lines.append(f"<h1>{html.escape(title)}</h1>")
+            continue
+
+        img_match = re.match(r"^\[IMAGEN:\s*(.*?)\]$", line)
+        if img_match:
+            img_path_str = img_match.group(1).strip()
+            base_img_path = (project_root / "manuscrito" / "actos" / img_path_str).resolve()
+            if base_img_path.exists():
+                clean_name = re.sub(r'[^a-zA-Z0-9]', '', base_img_path.stem.lower())
+                new_img_name = f"{cap_idx:02d}_{image_idx}_{clean_name}.jpg"
+                dest_path = export_dir / new_img_name
+                try:
+                    optimizar_imagen(base_img_path, dest_path)
+                except Exception as e:
+                    print(f"Error optimizando {base_img_path}: {e}")
+                images.append({"src_path": dest_path, "dest_name": new_img_name})
+                html_lines.append(f'<div style="text-align:center; margin: 1.5em 0;"><img src="{new_img_name}" style="max-width:100%; height:auto;" alt="Imagen" /></div>')
+                image_idx += 1
+            else:
+                html_lines.append(f"<!-- IMAGEN NO ENCONTRADA: {img_path_str} -->")
             continue
 
         if line in {"— — —", "***", "---"}:
@@ -111,17 +126,20 @@ def parse_markdown_to_html(text: str) -> str:
         escaped = escaped.replace("₂", "<sub>2</sub>")
         html_lines.append(f"<p>{escaped}</p>")
 
-    return "\n".join(html_lines)
+    return "\n".join(html_lines), images
 
 
 def chapter_title(markdown: str, fallback: str) -> str:
     for raw_line in markdown.splitlines():
         line = raw_line.strip()
         l_line = line.lower()
-        if l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter "):
+        if (l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or 
+            l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter ") or
+            l_line.startswith("# acto") or l_line.startswith("# prólogo") or l_line.startswith("# prologo") or
+            l_line.startswith("# epílogo") or l_line.startswith("# epilogo")):
+            
             clean = line.replace("# ", "", 1) if line.startswith("# ") else line
-            parts = re.split(r"\s+[—-]\s+", clean, maxsplit=1)
-            return parts[1].strip() if len(parts) > 1 else clean.strip()
+            return clean.strip()
     return fallback
 
 
@@ -146,13 +164,13 @@ def generate_epub(project_root: Path, language: str, output: Path | None) -> Pat
         output_file = project_root / output_file
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    cover_path = project_root / "exportacion" / f"portada_{language}.png"
+    cover_path = project_root / "exportacion" / f"portada_{language}.jpg"
     if not cover_path.exists():
-        cover_path = project_root / "exportacion" / "portada.png"
+        cover_path = project_root / "exportacion" / "portada.jpg"
 
-    chapter_files = sorted(manuscript_dir.glob("capitulo_*.md"))
+    chapter_files = sorted((manuscript_dir / "actos").glob("*.md"))
     if not chapter_files:
-        raise FileNotFoundError(f"No chapter files found in {manuscript_dir}")
+        raise FileNotFoundError(f"No chapter files found in {manuscript_dir / 'actos'}")
 
     book_id = str(uuid.uuid4())
     files_to_zip: dict[str, str] = {
@@ -242,18 +260,27 @@ p {
     if has_cover:
         manifest_items.extend([
             '<item id="cover-page" href="cover.xhtml" media-type="application/xhtml+xml"/>',
-            '<item id="cover-image" href="portada.png" media-type="image/png"/>',
+            '<item id="cover-image" href="portada.jpg" media-type="image/jpeg"/>',
         ])
         spine_items.insert(0, '<itemref idref="cover-page"/>')
         files_to_zip["OEBPS/cover.xhtml"] = """<?xml version="1.0" encoding="utf-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head><title>Portada</title></head>
-<body><div><img src="portada.png" alt="Portada" /></div></body>
+<body><div><img src="portada.jpg" alt="Portada" /></div></body>
 </html>"""
+
+    images_to_zip = {}
 
     for index, file_path in enumerate(chapter_files, start=1):
         markdown = file_path.read_text(encoding="utf-8")
-        html_content = parse_markdown_to_html(markdown)
+        html_content, images = parse_markdown_to_html(markdown, project_root, index - 1, export_dir)
+        
+        for img in images:
+            img_dest = img["dest_name"]
+            img_src = img["src_path"]
+            images_to_zip[f"OEBPS/{img_dest}"] = img_src
+            manifest_items.append(f'<item id="img_{img_dest}" href="{img_dest}" media-type="image/jpeg"/>')
+
         chap_id = f"chap_{index:02d}"
         chap_href = f"chapter_{index:02d}.xhtml"
         safe_title = html.escape(chapter_title(markdown, f"Capitulo {index}"))
@@ -329,8 +356,10 @@ p {
         for path, content in files_to_zip.items():
             if path != "mimetype":
                 epub.writestr(path, content, compress_type=zipfile.ZIP_DEFLATED)
+        for dest_path, src_path in images_to_zip.items():
+            epub.write(src_path, dest_path, compress_type=zipfile.ZIP_DEFLATED)
         if has_cover:
-            epub.write(cover_path, "OEBPS/portada.png", compress_type=zipfile.ZIP_DEFLATED)
+            epub.write(cover_path, "OEBPS/portada.jpg", compress_type=zipfile.ZIP_DEFLATED)
 
     return output_file
 

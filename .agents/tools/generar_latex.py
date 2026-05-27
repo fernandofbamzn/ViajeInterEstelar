@@ -1,6 +1,12 @@
 import argparse
 import re
+import shutil
+import sys
 from pathlib import Path
+
+# Añadimos .agents/tools al path para poder importar optimizar_imagenes_a5
+sys.path.append(str(Path(__file__).parent))
+from optimizar_imagenes_a5 import optimizar_imagen
 
 
 def repo_root_from_script() -> Path:
@@ -68,17 +74,8 @@ def validate_metadata(metadata: dict, language: str):
                 if pl.lower() in val.lower():
                     raise ValueError(f"Se detecto el placeholder prohibido '{pl}' en el campo '{field}'")
     
-    if language == "es":
-        if title != "Luz Vieja":
-            raise ValueError(f"El titulo en espanol debe ser 'Luz Vieja', se obtuvo '{title}'")
-        if subtitle != "Veinte anos de distancia" and subtitle != "Veinte años de distancia":
-            raise ValueError(f"El subtitulo en espanol debe ser 'Veinte anos de distancia', se obtuvo '{subtitle}'")
-    elif language == "en":
-        if title != "Old Light":
-            raise ValueError(f"El titulo en ingles debe ser 'Old Light', se obtuvo '{title}'")
-        if subtitle != "Twenty Light-Years of Distance":
-            raise ValueError(f"El subtitulo en ingles debe ser 'Twenty Light-Years of Distance', se obtuvo '{subtitle}'")
-            
+    # Se han eliminado las restricciones de título rígido (Luz Vieja)
+    # para permitir la compilación de la Bitácora y otros proyectos del universo.
     if author != "IOREB":
         raise ValueError(f"El autor definitivo debe ser 'IOREB', se obtuvo '{author}'")
 
@@ -101,8 +98,9 @@ def escape_latex(text: str) -> str:
     return text
 
 
-def parse_markdown_to_latex(text: str) -> str:
+def parse_markdown_to_latex(text: str, project_root: Path, export_dir: Path, cap_idx: int) -> str:
     latex_lines = []
+    image_idx = 1
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
@@ -111,13 +109,46 @@ def parse_markdown_to_latex(text: str) -> str:
             continue
 
         l_line = line.lower()
-        if l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter "):
+        if (l_line.startswith("# capitulo") or l_line.startswith("# capítulo") or l_line.startswith("# chapter") or 
+            l_line.startswith("capitulo ") or l_line.startswith("capítulo ") or l_line.startswith("chapter ") or
+            l_line.startswith("# acto") or l_line.startswith("# prólogo") or l_line.startswith("# prologo") or
+            l_line.startswith("# epílogo") or l_line.startswith("# epilogo")):
+            
             clean = line.replace("# ", "", 1) if line.startswith("# ") else line
-            parts = re.split(r"\s+[—-]\s+", clean, maxsplit=1)
-            title = parts[1].strip() if len(parts) > 1 else clean.strip()
-            title = escape_latex(title)
-            latex_lines.append(f"\\chapter{{{title}}}")
-            latex_lines.append(f"\\markboth{{{title}}}{{{title}}}")
+            title = clean.strip()
+            title_escaped = escape_latex(title)
+            latex_lines.append(f"\\chapter*{{{title_escaped}}}")
+            latex_lines.append(f"\\addcontentsline{{toc}}{{chapter}}{{{title_escaped}}}")
+            latex_lines.append(f"\\markboth{{{title_escaped}}}{{{title_escaped}}}")
+            continue
+
+        img_match = re.match(r"^\[IMAGEN:\s*(.*?)\]$", line)
+        if img_match:
+            img_path_str = img_match.group(1).strip()
+            base_img_path = (project_root / "manuscrito" / "actos" / img_path_str).resolve()
+            if base_img_path.exists():
+                clean_name = re.sub(r'[^a-zA-Z0-9]', '', base_img_path.stem.lower())
+                # Forzamos .jpg porque el optimizador siempre genera jpg
+                new_img_name = f"{cap_idx:02d}_{image_idx}_{clean_name}.jpg"
+                dest_path = export_dir / new_img_name
+                
+                # Optimizar imagen en vez de copiar
+                try:
+                    optimizar_imagen(base_img_path, dest_path)
+                except Exception as e:
+                    print(f"Error optimizando {base_img_path}: {e}")
+                    # Fallback por si falla la optimización
+                    shutil.copy2(base_img_path, dest_path)
+                
+                latex_lines.extend([
+                    r"\begin{figure}[h]",
+                    r"\centering",
+                    rf"\includegraphics[width=0.9\textwidth]{{{new_img_name}}}",
+                    r"\end{figure}"
+                ])
+                image_idx += 1
+            else:
+                latex_lines.append(f"% IMAGEN NO ENCONTRADA: {img_path_str}")
             continue
 
         if line in {"— — —", "***", "---"}:
@@ -142,7 +173,7 @@ def build_preamble(title: str, subtitle: str, author: str, cover_filename: str |
         cover_block = rf"""
 \newgeometry{{margin=0pt}}
 \thispagestyle{{empty}}
-\noindent\includegraphics[width=\paperwidth, height=\paperheight]{{{cover_filename}}}
+\noindent\includegraphics[width=\paperwidth, height=\paperheight]{{portada.jpg}}
 \clearpage
 \restoregeometry
 """
@@ -205,7 +236,7 @@ AI Assistance Declaration: This work of science fiction was developed and transl
 \usepackage{{graphicx}}
 \usepackage{{titlesec}}
 \titleformat{{\chapter}}[display]
-  {{\normalfont\huge\bfseries\centering}}{{\chaptertitlename\ \thechapter}}{{20pt}}{{\Huge}}
+  {{\normalfont\huge\bfseries\raggedright}}{{\chaptertitlename\ \thechapter}}{{20pt}}{{\Huge}}
 \usepackage[titles]{{tocloft}}
 \setlength{{\cftchapnumwidth}}{{3.5em}}
 \widowpenalty=10000
@@ -261,15 +292,15 @@ def generate_book(project_root: Path, language: str, output: Path | None) -> Pat
         cover_source = project_root / "exportacion" / "portada.png"
     cover_filename = cover_source.name if cover_source.exists() else None
 
-    chapter_files = sorted(manuscript_dir.glob("capitulo_*.md"))
+    chapter_files = sorted((manuscript_dir / "actos").glob("*.md"))
     if not chapter_files:
-        raise FileNotFoundError(f"No chapter files found in {manuscript_dir}")
+        raise FileNotFoundError(f"No chapter files found in {manuscript_dir / 'actos'}")
 
     with output_file.open("w", encoding="utf-8", newline="\n") as f_out:
         f_out.write(build_preamble(title, subtitle, author, cover_filename, language))
-        for file_path in chapter_files:
+        for idx, file_path in enumerate(chapter_files):
             content = file_path.read_text(encoding="utf-8")
-            f_out.write(parse_markdown_to_latex(content))
+            f_out.write(parse_markdown_to_latex(content, project_root, export_dir, idx))
             f_out.write("\n\n")
         f_out.write("\n\\end{document}\n")
 

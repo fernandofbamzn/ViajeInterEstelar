@@ -1,5 +1,11 @@
 # Glosario y biblia de continuidad
 
+> **Biblia modular** — Este documento es el glosario canónico completo. Para documentos más detallados, consulta:
+> - [Personajes](personajes/README.md) — Fichas de personaje y voz narrativa
+> - [Mundo](mundo/README.md) — Sistema solar habitado, culturas, demografía
+> - [Tecnología](tecnologia/README.md) — Resumen por categorías y referencia rápida
+> - [Trama](../trama/README.md) — Premisa, escaleta y estructura dramática
+
 ## Premisa general
 
 La humanidad ha construido una red de transporte solar escalonada. Primero dominó la fusión nuclear aplicada a energía y propulsión. Después desarrolló una tecnología de distorsión espacial limitada: el **warp sublumínico** y, más adelante, lanzamientos asistidos de velocidad efectiva superlumínica mediante infraestructura externa.
